@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Classified Emails - AI Email Tagger</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --text: #1f2933;
+        --muted: #667085;
+        --border: #d9dee7;
+        --primary: #2563eb;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .wrap {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+      .topbar {
+        min-height: 76px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 0;
+      }
+      a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 650;
+      }
+      main {
+        padding: 26px 0 48px;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .metric {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+      }
+      .metric strong {
+        display: block;
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+      .metric span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .filter {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: #344054;
+        font-size: 14px;
+      }
+      .filter.active {
+        border-color: var(--primary);
+        background: #eaf1ff;
+        color: #174ea6;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th, td {
+        text-align: left;
+        padding: 13px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        background: #f9fafb;
+        color: #475467;
+        font-size: 13px;
+      }
+      td {
+        font-size: 14px;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .subject {
+        font-weight: 650;
+        max-width: 420px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .Work { background: #e8f1ff; color: #155eef; }
+      .Finance { background: #e6f5ef; color: #087f5b; }
+      .Newsletters { background: #f2eafd; color: #6941c6; }
+      .Social { background: #e8f7ff; color: #027a9e; }
+      .Promotions { background: #fff1e6; color: #b54708; }
+      .Travel { background: #e8fff3; color: #047857; }
+      .Health { background: #ffecef; color: #c01048; }
+      .Shopping { background: #fff7d6; color: #854d0e; }
+      .Family { background: #fef0f7; color: #c11574; }
+      .Other { background: #eef2f6; color: #475467; }
+      .empty {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 26px;
+        color: var(--muted);
+      }
+      @media (max-width: 760px) {
+        .topbar { align-items: flex-start; flex-direction: column; padding: 18px 0; }
+        table { display: block; overflow-x: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap topbar">
+        <h1>Classified Emails</h1>
+        <a href="{{ url_for('index') }}">Fetch more</a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="summary" aria-label="Summary">
+        <div class="metric">
+          <strong>{{ total_count }}</strong>
+          <span>Total emails</span>
+        </div>
+        {% for category in categories %}
+          <div class="metric">
+            <strong>{{ counts.get(category, 0) }}</strong>
+            <span>{{ category }}</span>
+          </div>
+        {% endfor %}
+      </section>
+
+      <nav class="filters" aria-label="Email filters">
+        <a class="filter {% if selected_label == 'All' %}active{% endif %}" href="{{ url_for('emails') }}">All</a>
+        {% for category in categories %}
+          <a class="filter {% if selected_label == category %}active{% endif %}" href="{{ url_for('emails', label=category) }}">{{ category }}</a>
+        {% endfor %}
+      </nav>
+
+      {% if emails %}
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Sender</th>
+              <th>Date</th>
+              <th>Label</th>
+              <th>Confidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for email in emails %}
+              <tr>
+                <td class="subject">{{ email.subject or "(no subject)" }}</td>
+                <td>{{ email.sender }}</td>
+                <td class="muted">{{ email.date }}</td>
+                <td><span class="badge {{ email.label }}">{{ email.label }}</span></td>
+                <td>{{ "%.2f"|format(email.confidence or 0) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="empty">No emails found for this filter.</div>
+      {% endif %}
+    </main>
+  </body>
+</html>

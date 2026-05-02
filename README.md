@@ -1,48 +1,44 @@
 # AI Email Tagger
 
-AI Email Tagger is a Python project for collecting Gmail messages with Scrapy and preparing them for automated classification.
+A pure Flask web app that connects to Gmail, fetches inbox emails, classifies them locally with spaCy NLP, stores results in SQLite, and displays them in a clean browser UI.
 
-## What Is Included
+No Scrapy, PRAW, Jupyter, Reddit, React, or JavaScript frameworks are used.
 
-- `gmail_spider.py`: Scrapy spider that authenticates with Gmail, paginates messages, extracts email fields, cleans items, deduplicates messages, and can store results in SQLite.
-- `.devcontainer/devcontainer.json`: GitHub Codespaces setup using Python 3.11 and JupyterLab.
-- `requirements.txt`: Python dependencies for scraping, notebooks, Reddit API experiments, and Anthropic API integration.
-- `.env.example`: Template for local API credentials.
+## Step 1: Google OAuth Setup
 
-## Setup
+1. Create a Google Cloud project.
+2. Enable the Gmail API.
+3. Configure the OAuth consent screen.
+4. Create OAuth client credentials.
+5. Choose a Web application client type.
+6. Add `http://localhost:5000/callback` as an authorized redirect URI.
+7. Download the JSON file.
+8. Save it in this project root as `credentials.json`.
 
-1. Create a Google Cloud project and enable the Gmail API.
-2. Download OAuth credentials for a desktop app.
-3. Save the file as `credentials.json` locally, or provide it through the `GMAIL_CREDENTIALS` Codespaces secret.
-4. Install dependencies:
+Do not commit `credentials.json`, `token.json`, or `emails.db`.
 
-```bash
-pip install -r requirements.txt
-```
-
-5. Run the Gmail spider:
+## Step 2: Install
 
 ```bash
-scrapy runspider gmail_spider.py -o emails.jsonl
+bash setup.sh
 ```
 
-## Configuration
+This installs Python dependencies and downloads spaCy `en_core_web_md`.
 
-The spider supports these Scrapy settings:
+## Step 3: Run
 
-- `GMAIL_QUERY`: Gmail search query, for example `label:inbox is:unread`.
-- `GMAIL_MAX_RESULTS`: API page size, from 1 to 500.
-- `GMAIL_CREDENTIALS_FILE`: OAuth client credentials path.
-- `GMAIL_TOKEN_FILE`: Cached OAuth token path.
-- `GMAIL_MAX_MESSAGES`: Stop after this many messages; `0` means no limit.
-- `GMAIL_SQLITE_DB`: SQLite database path for `StoragePipeline`.
+```bash
+python app.py
+```
 
-## Codespaces
+## Step 4: Connect Gmail
 
-The devcontainer exposes port `8888` for JupyterLab and installs all dependencies from `requirements.txt`.
+Open [http://localhost:5000](http://localhost:5000) and click **Connect Gmail**. After Google OAuth succeeds, `token.json` is created automatically.
 
-Create a Codespaces secret named `GMAIL_CREDENTIALS` for Gmail OAuth credentials. Keep `credentials.json`, `token.json`, `.env`, and `emails.db` out of Git.
+## Step 5: Fetch And Classify
 
-## Security
+Enter how many recent inbox emails to fetch, then click **Fetch & Classify Emails**. Classification runs locally with spaCy and works offline after the Gmail emails have been fetched.
 
-Never commit API keys, OAuth tokens, personal email exports, or SQLite databases containing email content. Use `.env.example` as a template only.
+## Categories
+
+Work, Finance, Newsletters, Social, Promotions, Travel, Health, Shopping, Family, Other.

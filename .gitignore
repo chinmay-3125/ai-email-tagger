@@ -12,19 +12,14 @@ build/
 dist/
 *.egg-info/
 
-# Scrapy
-.scrapy/
-
 # Local Git workaround metadata
 .git-meta/
-
-# Jupyter
-.ipynb_checkpoints/
 
 # Local secrets and OAuth tokens
 .env
 credentials.json
 token.json
+client_secret_595719114919-pac8qi4i6q0gfdvdkl5evhr21q4aacqm.apps.googleusercontent.com.json
 
 # Local data outputs
 emails.db

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Email Tagger</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --text: #1f2933;
+        --muted: #667085;
+        --border: #d9dee7;
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --success: #087f5b;
+        --error: #b42318;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 32px;
+      }
+      main {
+        width: min(720px, 100%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 36px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 34px;
+        letter-spacing: 0;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+        margin: 0 0 24px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: end;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      input {
+        height: 44px;
+        width: 150px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 12px;
+        font: inherit;
+      }
+      button,
+      .button {
+        border: 0;
+        border-radius: 6px;
+        background: var(--primary);
+        color: white;
+        font: inherit;
+        font-weight: 650;
+        height: 44px;
+        padding: 0 18px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      button:hover,
+      .button:hover { background: var(--primary-dark); }
+      .secondary {
+        background: #eef2ff;
+        color: #243b80;
+      }
+      .secondary:hover { background: #dfe7ff; }
+      .flash {
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin: 0 0 18px;
+        font-weight: 600;
+      }
+      .flash.success {
+        background: #e6f5ef;
+        color: var(--success);
+      }
+      .flash.error {
+        background: #fff0ee;
+        color: var(--error);
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: #98a2b3;
+      }
+      .dot.on { background: #12b76a; }
+    </style>
+  </head>
+  <body>
+    <main>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <h1>AI Email Tagger</h1>
+      <p>Connect Gmail, fetch recent inbox messages, classify them locally with spaCy, and review the results in a clean table.</p>
+
+      <div class="status">
+        <span class="dot {% if authenticated %}on{% endif %}"></span>
+        {% if authenticated %}Gmail connected{% else %}Gmail not connected{% endif %}
+      </div>
+
+      {% if not authenticated %}
+        <a class="button" href="{{ url_for('auth') }}">Connect Gmail</a>
+      {% else %}
+        <form class="actions" action="{{ url_for('fetch') }}" method="post">
+          <label>
+            Number of emails
+            <input type="number" name="max_results" value="{{ default_fetch_count }}" min="1" max="500">
+          </label>
+          <button type="submit">Fetch &amp; Classify Emails</button>
+          <a class="button secondary" href="{{ url_for('emails') }}">View Emails</a>
+        </form>
+      {% endif %}
+    </main>
+  </body>
+</html>

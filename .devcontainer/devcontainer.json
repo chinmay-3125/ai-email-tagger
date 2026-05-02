@@ -4,17 +4,16 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-python.python",
-        "ms-toolsai.jupyter"
+        "ms-python.python"
       ]
     }
   },
   "forwardPorts": [
-    8888
+    5000
   ],
   "portsAttributes": {
-    "8888": {
-      "label": "JupyterLab",
+    "5000": {
+      "label": "AI Email Tagger",
       "onAutoForward": "openBrowser"
     }
   },
@@ -23,5 +22,5 @@
       "description": "Contents of the Gmail OAuth credentials.json file"
     }
   },
-  "postCreateCommand": "if [ -n \"$GMAIL_CREDENTIALS\" ]; then printf '%s' \"$GMAIL_CREDENTIALS\" > credentials.json; fi && pip install -r requirements.txt && jupyter lab --no-browser --port 8888"
+  "postCreateCommand": "if [ -n \"$GMAIL_CREDENTIALS\" ]; then printf '%s' \"$GMAIL_CREDENTIALS\" > credentials.json; fi && bash setup.sh"
 }

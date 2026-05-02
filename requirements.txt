@@ -1,9 +1,5 @@
-scrapy
-google-api-python-client
-google-auth-oauthlib
-anthropic
-praw
-pandas
-rich
-jupyter
-ipywidgets
+flask>=3.0.0
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.120.0
+spacy>=3.7.0
+python-dotenv>=1.0.0

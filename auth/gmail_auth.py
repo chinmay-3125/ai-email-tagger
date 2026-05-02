@@ -89,11 +89,12 @@ def create_flow(state: str | None = None) -> Flow:
     return flow
 
 
-def get_authorization_url() -> tuple[str, str]:
+def get_authorization_url() -> tuple[str, str, str | None]:
     """Create a Gmail OAuth authorization URL.
 
     Returns:
-        Tuple of authorization URL and OAuth state.
+        Tuple of (authorization URL, OAuth state, PKCE code_verifier).
+        code_verifier may be None if the library did not generate one.
     """
     # redirect_uri is now owned entirely by create_flow() — no argument needed.
     flow = create_flow()
@@ -101,20 +102,26 @@ def get_authorization_url() -> tuple[str, str]:
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
-        code_challenge_method=None,
     )
-    return authorization_url, state
+    # Capture the PKCE code_verifier the library generated (if any).
+    # It must be passed back to fetch_token() or Google rejects with
+    # "invalid_grant: Missing code verifier".
+    code_verifier = flow.code_verifier
+    return authorization_url, state, code_verifier
 
 
 def save_callback_token(
     authorization_response: str,
     state: str,
+    code_verifier: str | None = None,
 ) -> Credentials:
     """Exchange OAuth callback data for credentials and cache token.json.
 
     Args:
         authorization_response: Full callback URL received from Google.
         state: OAuth state stored in Flask session.
+        code_verifier: PKCE verifier generated during authorization. Must be
+            passed when the authorization URL included a code_challenge.
 
     Returns:
         Authorized Gmail OAuth credentials.
@@ -124,7 +131,11 @@ def save_callback_token(
     # --- DEBUG ---
     print(f"[TOKEN] fetching token with redirect_uri={flow.redirect_uri}")
     print(f"[TOKEN] authorization_response={authorization_response}")
-    flow.fetch_token(authorization_response=authorization_response)
+    print(f"[TOKEN] code_verifier={'<present>' if code_verifier else '<None>'}")
+    flow.fetch_token(
+        authorization_response=authorization_response,
+        code_verifier=code_verifier,
+    )
     credentials = flow.credentials
     TOKEN_PATH.write_text(credentials.to_json(), encoding="utf-8")
     return credentials

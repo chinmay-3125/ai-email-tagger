@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS emails (
     body TEXT,
     label TEXT,
     confidence REAL,
-    created_at TIMESTAMP
+    created_at TIMESTAMP,
+    priority_tag TEXT
 )
 """
 
@@ -29,28 +30,30 @@ REQUIRED_COLUMNS: dict[str, str] = {
     "label": "TEXT",
     "confidence": "REAL",
     "created_at": "TIMESTAMP",
+    "priority_tag": "TEXT",
 }
 
 UPSERT_EMAIL_SQL = """
-INSERT INTO emails (id, subject, sender, date, body, label, confidence, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO emails (id, subject, sender, date, body, label, confidence, created_at, priority_tag)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
     subject = excluded.subject,
     sender = excluded.sender,
     date = excluded.date,
     body = excluded.body,
     label = excluded.label,
-    confidence = excluded.confidence
+    confidence = excluded.confidence,
+    priority_tag = excluded.priority_tag
 """
 
 SELECT_ALL_EMAILS_SQL = """
-SELECT id, subject, sender, date, body, label, confidence, created_at
+SELECT id, subject, sender, date, body, label, confidence, created_at, priority_tag
 FROM emails
 ORDER BY created_at DESC
 """
 
 SELECT_EMAILS_BY_LABEL_SQL = """
-SELECT id, subject, sender, date, body, label, confidence, created_at
+SELECT id, subject, sender, date, body, label, confidence, created_at, priority_tag
 FROM emails
 WHERE label = ?
 ORDER BY created_at DESC
@@ -129,7 +132,7 @@ def get_emails_by_label(label: str) -> list[dict[str, Any]]:
         ]
 
 
-def _email_row(email: dict[str, Any]) -> tuple[str, str, str, str, str, str, float, str]:
+def _email_row(email: dict[str, Any]) -> tuple[str, str, str, str, str, str, float, str, str]:
     """Convert an email dictionary to SQLite parameters."""
     return (
         str(email.get("id", "")),
@@ -140,6 +143,7 @@ def _email_row(email: dict[str, Any]) -> tuple[str, str, str, str, str, str, flo
         str(email.get("label", "Other")),
         float(email.get("confidence", 0.0)),
         str(email.get("created_at") or datetime.now(tz=timezone.utc).isoformat()),
+        str(email.get("priority_tag", "FYI")),
     )
 
 
@@ -156,6 +160,7 @@ def _ensure_columns(connection: sqlite3.Connection) -> None:
 
 def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     """Convert a SQLite row to a dictionary."""
+    priority_tag = row["priority_tag"] if "priority_tag" in row.keys() and row["priority_tag"] is not None else "FYI"
     return {
         "id": row["id"],
         "subject": row["subject"],
@@ -165,4 +170,5 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
         "label": row["label"],
         "confidence": row["confidence"],
         "created_at": row["created_at"],
+        "priority_tag": priority_tag,
     }

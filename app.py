@@ -26,6 +26,7 @@ from auth.gmail_auth import (
     has_token,
     save_callback_token,
 )
+from classifier.priority_tagger import tag_priority
 from classifier.spacy_tagger import CATEGORIES, classify_email
 from db.store import get_all_emails, get_emails_by_label, init_db, save_emails
 from fetcher.gmail_fetcher import fetch_emails
@@ -70,8 +71,9 @@ def auth() -> Any:
     try:
         # redirect_uri is hardcoded inside create_flow() in gmail_auth.py.
         # Value: "http://localhost:5000/callback" — must match Google Cloud Console exactly.
-        authorization_url, state = get_authorization_url()
+        authorization_url, state, code_verifier = get_authorization_url()
         session["oauth_state"] = state
+        session["code_verifier"] = code_verifier
         # --- DEBUG ---
         print(f"[AUTH] redirect_uri sent to Google: {REDIRECT_URI}")
         print(f"[AUTH] authorization_url: {authorization_url}")
@@ -107,6 +109,7 @@ def callback() -> Any:
         save_callback_token(
             authorization_response=authorization_response,
             state=expected_state,
+            code_verifier=session.pop("code_verifier", None),
         )
         session["authenticated"] = True
         session.pop("oauth_state", None)
@@ -191,20 +194,26 @@ def api_emails() -> Any:
 
 def _classify_and_shape(email: dict[str, Any]) -> dict[str, Any]:
     """Add spaCy classification fields to one fetched email."""
-    result = classify_email(email.get("subject", ""), email.get("body_snippet", ""))
+    subject = email.get("subject", "")
+    body = email.get("body_snippet", "")
+    
+    result = classify_email(subject, body)
     confidence = float(result["confidence"])
     label = str(result["label"])
     if confidence < 0.6:
         label = LOW_CONFIDENCE_LABEL
 
+    priority_tag = tag_priority(subject, body)
+
     return {
         "id": email.get("id", ""),
-        "subject": email.get("subject", ""),
+        "subject": subject,
         "sender": email.get("sender", ""),
         "date": email.get("date", ""),
-        "body": email.get("body_snippet", ""),
+        "body": body,
         "label": label,
         "confidence": confidence,
+        "priority_tag": priority_tag,
     }
 
 

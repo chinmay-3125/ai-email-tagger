@@ -137,6 +137,11 @@
       .Shopping { background: #fff7d6; color: #854d0e; }
       .Family { background: #fef0f7; color: #c11574; }
       .Other { background: #eef2f6; color: #475467; }
+      .priority-Urgent { background: #fee2e2; color: #b91c1c; }
+      .priority-Needs-Reply { background: #fef3c7; color: #b45309; }
+      .priority-Important { background: #d1fae5; color: #047857; }
+      .priority-Spam { background: #f3f4f6; color: #374151; }
+      .priority-FYI { background: #e0f2fe; color: #0369a1; }
       .empty {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -173,10 +178,21 @@
       </section>
 
       <nav class="filters" aria-label="Email filters">
+        <span style="font-weight: 600; color: var(--muted); align-self: center;">Category:</span>
         <a class="filter {% if selected_label == 'All' %}active{% endif %}" href="{{ url_for('emails') }}">All</a>
         {% for category in categories %}
           <a class="filter {% if selected_label == category %}active{% endif %}" href="{{ url_for('emails', label=category) }}">{{ category }}</a>
         {% endfor %}
+      </nav>
+
+      <nav class="filters" aria-label="Priority filters" id="priority-filters">
+        <span style="font-weight: 600; color: var(--muted); align-self: center;">Priority:</span>
+        <button class="filter active" onclick="filterPriority('All', this)">All</button>
+        <button class="filter" onclick="filterPriority('Urgent', this)">Urgent</button>
+        <button class="filter" onclick="filterPriority('Needs Reply', this)">Needs Reply</button>
+        <button class="filter" onclick="filterPriority('Important', this)">Important</button>
+        <button class="filter" onclick="filterPriority('Spam', this)">Spam</button>
+        <button class="filter" onclick="filterPriority('FYI', this)">FYI</button>
       </nav>
 
       {% if emails %}
@@ -187,16 +203,18 @@
               <th>Sender</th>
               <th>Date</th>
               <th>Label</th>
+              <th>Priority</th>
               <th>Confidence</th>
             </tr>
           </thead>
           <tbody>
             {% for email in emails %}
-              <tr>
+              <tr data-priority="{{ email.priority_tag }}">
                 <td class="subject">{{ email.subject or "(no subject)" }}</td>
                 <td>{{ email.sender }}</td>
                 <td class="muted">{{ email.date }}</td>
                 <td><span class="badge {{ email.label }}">{{ email.label }}</span></td>
+                <td><span class="badge priority-{{ email.priority_tag|replace(' ', '-') }}">{{ email.priority_tag }}</span></td>
                 <td>{{ "%.2f"|format(email.confidence or 0) }}</td>
               </tr>
             {% endfor %}
@@ -206,5 +224,20 @@
         <div class="empty">No emails found for this filter.</div>
       {% endif %}
     </main>
+    <script>
+      function filterPriority(priority, btn) {
+        document.querySelectorAll('#priority-filters .filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+          if (priority === 'All') {
+            row.style.display = '';
+          } else {
+            const rowPriority = row.getAttribute('data-priority');
+            row.style.display = rowPriority === priority ? '' : 'none';
+          }
+        });
+      }
+    </script>
   </body>
 </html>

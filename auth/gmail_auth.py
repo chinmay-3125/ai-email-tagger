@@ -101,6 +101,7 @@ def get_authorization_url() -> tuple[str, str]:
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
+        code_challenge_method=None,
     )
     return authorization_url, state
 

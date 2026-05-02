@@ -34,6 +34,9 @@ DEFAULT_FETCH_COUNT = 50
 MAX_FETCH_COUNT = 500
 LOW_CONFIDENCE_LABEL = "Other"
 
+# Must match what is registered in Google Cloud Console exactly.
+REDIRECT_URI = "http://localhost:5000/callback"
+
 
 load_dotenv()
 allow_local_http_oauth()
@@ -69,6 +72,9 @@ def auth() -> Any:
         # Value: "http://localhost:5000/callback" — must match Google Cloud Console exactly.
         authorization_url, state = get_authorization_url()
         session["oauth_state"] = state
+        # --- DEBUG ---
+        print(f"[AUTH] redirect_uri sent to Google: {REDIRECT_URI}")
+        print(f"[AUTH] authorization_url: {authorization_url}")
         return redirect(authorization_url)
     except FileNotFoundError as exc:
         flash(str(exc), "error")
@@ -91,6 +97,10 @@ def callback() -> Any:
         # request.url may contain "127.0.0.1" when Flask runs on 0.0.0.0/localhost.
         # Normalise it to "localhost" so it matches the hardcoded redirect_uri character-for-character.
         authorization_response = request.url.replace("127.0.0.1", "localhost")
+        # --- DEBUG ---
+        print(f"[CALLBACK] request.url: {request.url}")
+        print(f"[CALLBACK] authorization_response after replace: {authorization_response}")
+        print(f"[CALLBACK] redirect_uri: {REDIRECT_URI}")
 
         # redirect_uri is now owned by create_flow() inside save_callback_token().
         # Value: "http://localhost:5000/callback" — must match what was sent to Google.
@@ -101,8 +111,9 @@ def callback() -> Any:
         session["authenticated"] = True
         session.pop("oauth_state", None)
         flash("Gmail connected successfully.", "success")
-    except Exception:
-        flash("Gmail authorization failed. Please try connecting again.", "error")
+    except Exception as e:
+        print(f"[CALLBACK ERROR] {type(e).__name__}: {e}")
+        flash(f"Gmail authorization failed: {e}", "error")
 
     return redirect(url_for("index"))
 

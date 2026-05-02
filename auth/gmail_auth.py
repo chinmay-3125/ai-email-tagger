@@ -84,6 +84,8 @@ def create_flow(state: str | None = None) -> Flow:
         state=state,
         redirect_uri=_REDIRECT_URI,
     )
+    # --- DEBUG ---
+    print(f"[FLOW] flow.redirect_uri set to: {flow.redirect_uri}")
     return flow
 
 
@@ -118,6 +120,9 @@ def save_callback_token(
     """
     # redirect_uri is now owned entirely by create_flow() — no argument needed.
     flow = create_flow(state=state)
+    # --- DEBUG ---
+    print(f"[TOKEN] fetching token with redirect_uri={flow.redirect_uri}")
+    print(f"[TOKEN] authorization_response={authorization_response}")
     flow.fetch_token(authorization_response=authorization_response)
     credentials = flow.credentials
     TOKEN_PATH.write_text(credentials.to_json(), encoding="utf-8")

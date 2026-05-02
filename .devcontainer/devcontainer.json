@@ -1,0 +1,27 @@
+{
+  "name": "AI Email Tagger",
+  "image": "python:3.11-slim",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  },
+  "forwardPorts": [
+    8888
+  ],
+  "portsAttributes": {
+    "8888": {
+      "label": "JupyterLab",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "secrets": {
+    "GMAIL_CREDENTIALS": {
+      "description": "Contents of the Gmail OAuth credentials.json file"
+    }
+  },
+  "postCreateCommand": "if [ -n \"$GMAIL_CREDENTIALS\" ]; then printf '%s' \"$GMAIL_CREDENTIALS\" > credentials.json; fi && pip install -r requirements.txt && jupyter lab --no-browser --port 8888"
+}

@@ -15,6 +15,9 @@ dist/
 # Scrapy
 .scrapy/
 
+# Local Git workaround metadata
+.git-meta/
+
 # Jupyter
 .ipynb_checkpoints/
 

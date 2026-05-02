@@ -34,6 +34,7 @@ DEFAULT_FETCH_COUNT = 50
 MAX_FETCH_COUNT = 500
 LOW_CONFIDENCE_LABEL = "Other"
 
+
 load_dotenv()
 allow_local_http_oauth()
 
@@ -64,8 +65,9 @@ def index() -> str:
 def auth() -> Any:
     """Start Gmail OAuth2 flow."""
     try:
-        redirect_uri = url_for("callback", _external=True)
-        authorization_url, state = get_authorization_url(redirect_uri)
+        # redirect_uri is hardcoded inside create_flow() in gmail_auth.py.
+        # Value: "http://localhost:5000/callback" — must match Google Cloud Console exactly.
+        authorization_url, state = get_authorization_url()
         session["oauth_state"] = state
         return redirect(authorization_url)
     except FileNotFoundError as exc:
@@ -86,10 +88,14 @@ def callback() -> Any:
         return redirect(url_for("index"))
 
     try:
-        redirect_uri = url_for("callback", _external=True)
+        # request.url may contain "127.0.0.1" when Flask runs on 0.0.0.0/localhost.
+        # Normalise it to "localhost" so it matches the hardcoded redirect_uri character-for-character.
+        authorization_response = request.url.replace("127.0.0.1", "localhost")
+
+        # redirect_uri is now owned by create_flow() inside save_callback_token().
+        # Value: "http://localhost:5000/callback" — must match what was sent to Google.
         save_callback_token(
-            redirect_uri=redirect_uri,
-            authorization_response=request.url,
+            authorization_response=authorization_response,
             state=expected_state,
         )
         session["authenticated"] = True
@@ -192,4 +198,5 @@ def _classify_and_shape(email: dict[str, Any]) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # Run on "localhost" so request.url always uses "localhost", matching REDIRECT_URI.
+    app.run(host="localhost", port=5000, debug=True)

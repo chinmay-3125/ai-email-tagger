@@ -48,11 +48,19 @@ def load_credentials() -> Credentials | None:
     return None
 
 
-def create_flow(redirect_uri: str, state: str | None = None) -> Flow:
+# The one canonical redirect URI used everywhere in the OAuth flow.
+# Value: "http://localhost:5000/callback" — must match Google Cloud Console exactly.
+_REDIRECT_URI = "http://localhost:5000/callback"
+
+
+def create_flow(state: str | None = None) -> Flow:
     """Create a Google OAuth flow for the Flask app.
 
+    The redirect_uri is hardcoded to ``_REDIRECT_URI`` so every part of the
+    flow always uses the same literal string — no caller can accidentally
+    pass a different value.
+
     Args:
-        redirect_uri: Absolute callback URL for the current Flask request.
         state: Optional OAuth state value from the user's session.
 
     Returns:
@@ -67,25 +75,26 @@ def create_flow(redirect_uri: str, state: str | None = None) -> Flow:
             "Download OAuth client credentials from Google Cloud Console first."
         )
 
+    # redirect_uri is passed directly into from_client_secrets_file so it is
+    # baked into the flow object before authorization_url() is ever called.
+    # Value: "http://localhost:5000/callback"
     flow = Flow.from_client_secrets_file(
         str(CREDENTIALS_PATH),
         scopes=SCOPES,
         state=state,
+        redirect_uri=_REDIRECT_URI,
     )
-    flow.redirect_uri = redirect_uri
     return flow
 
 
-def get_authorization_url(redirect_uri: str) -> tuple[str, str]:
+def get_authorization_url() -> tuple[str, str]:
     """Create a Gmail OAuth authorization URL.
-
-    Args:
-        redirect_uri: Absolute callback URL for the current Flask request.
 
     Returns:
         Tuple of authorization URL and OAuth state.
     """
-    flow = create_flow(redirect_uri=redirect_uri)
+    # redirect_uri is now owned entirely by create_flow() — no argument needed.
+    flow = create_flow()
     authorization_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
@@ -95,21 +104,20 @@ def get_authorization_url(redirect_uri: str) -> tuple[str, str]:
 
 
 def save_callback_token(
-    redirect_uri: str,
     authorization_response: str,
     state: str,
 ) -> Credentials:
     """Exchange OAuth callback data for credentials and cache token.json.
 
     Args:
-        redirect_uri: Absolute callback URL for the current Flask request.
         authorization_response: Full callback URL received from Google.
         state: OAuth state stored in Flask session.
 
     Returns:
         Authorized Gmail OAuth credentials.
     """
-    flow = create_flow(redirect_uri=redirect_uri, state=state)
+    # redirect_uri is now owned entirely by create_flow() — no argument needed.
+    flow = create_flow(state=state)
     flow.fetch_token(authorization_response=authorization_response)
     credentials = flow.credentials
     TOKEN_PATH.write_text(credentials.to_json(), encoding="utf-8")
